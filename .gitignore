@@ -1,0 +1,8 @@
+# directories
+.vscode
+etc
+tmp
+
+# files
+iac/*_output.yaml
+notes.md

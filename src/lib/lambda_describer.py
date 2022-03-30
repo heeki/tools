@@ -24,7 +24,7 @@ class LambdaDescriber:
             )
         return response
 
-    # main functions
+    # function-level information
     def list_layers(self, desired=None):
         response = self.client.list_layers()
         output = []
@@ -68,4 +68,36 @@ class LambdaDescriber:
                     for layer in fn["Layers"]:
                         if in_scope == layer["Arn"]:
                             output[in_scope].append(fn["FunctionName"])
+        return output
+
+    # account-level information
+    def get_concurrency_limits(self):
+        response = self.client.get_account_settings()
+        output = {
+            "limits": {
+                "concurrent_executions": response["AccountLimit"]["ConcurrentExecutions"],
+                "unreserved_concurrent_executions": response["AccountLimit"]["UnreservedConcurrentExecutions"]
+            }
+        }
+        return output
+
+    def get_code_storage(self):
+        response = self.client.get_account_settings()
+        total_code_gb = response["AccountLimit"]["TotalCodeSize"]/1024/1024/1024
+        total_code_used = response["AccountUsage"]["TotalCodeSize"]/1024/1024/1024
+        per_fn_code_size_unzipped_mb = response["AccountLimit"]["CodeSizeUnzipped"]/1024/1024
+        per_fn_code_size_zipped_mb = response["AccountLimit"]["CodeSizeZipped"]/1024/1024
+        fn_count = response["AccountUsage"]["FunctionCount"]
+        output = {
+            "limits": {
+                "total_code_gb": total_code_gb,
+                "per_fn_code_size_unzipped_mb": per_fn_code_size_unzipped_mb,
+                "per_fn_code_size_zipped_mb": per_fn_code_size_zipped_mb
+            },
+            "usage": {
+                "total_code_used_gb": total_code_used,
+                "total_code_remaining_gb": total_code_gb - total_code_used,
+                "fn_count": fn_count
+            }
+        }
         return output

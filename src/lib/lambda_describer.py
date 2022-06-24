@@ -25,6 +25,12 @@ class LambdaDescriber:
         return response
 
     # function-level information
+    def get_function(self, fname):
+        response = self.client.get_function(
+            FunctionName=fname
+        )
+        return response
+
     def list_layers(self, desired=None):
         response = self.client.list_layers()
         output = []
@@ -68,6 +74,31 @@ class LambdaDescriber:
                     for layer in fn["Layers"]:
                         if in_scope == layer["Arn"]:
                             output[in_scope].append(fn["FunctionName"])
+        return output
+
+    def list_functions_by_eni(self, online=False):
+        fns = self.list_functions(online=online)
+
+        output = []
+        attribs = [
+            "FunctionName", "Runtime",
+            "State", "StateReason", "StateReasonCode",
+            "LastModified",
+            "LastUpdateStatus", "LastUpdateStatusReason", "LastUpdateStatusReasonCode",
+            "VpcConfig"
+        ]
+        for fn in fns:
+            payload = {}
+            for attrib in attribs:
+                if attrib in fn:
+                    payload[attrib] = fn[attrib]
+            if "VpcConfig" in fn and "VpcId" in fn["VpcConfig"] and fn["VpcConfig"]["VpcId"] != "":
+                # details seem to be missing from list_functions()
+                details = self.get_function(fn["FunctionName"])
+                extras = ["State", "LastUpdateStatus"]
+                for extra in extras:
+                    payload[extra] = details["Configuration"][extra]
+                output.append(payload)
         return output
 
     # account-level information

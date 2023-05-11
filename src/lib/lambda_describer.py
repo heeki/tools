@@ -1,11 +1,14 @@
 import boto3
 import json
 import sys
-from lib.layer_options import LayerOptions
+from lib.enums import LayerOptions
 
 class LambdaDescriber:
-    def __init__(self):
-        self.session = boto3.session.Session()
+    def __init__(self, session=None):
+        if session is None:
+            self.session = boto3.session.Session()
+        else:
+            self.session = session
         self.client = self.session.client("lambda")
 
     # helper functions
@@ -99,6 +102,16 @@ class LambdaDescriber:
                 for extra in extras:
                     payload[extra] = details["Configuration"][extra]
                 output.append(payload)
+        return output
+
+    def list_functions_in_runtime_list(self, runtimes, online=False):
+        fns = self.list_functions(online=online)
+
+        output = []
+        for fn in fns:
+            runtime = fn["Runtime"]
+            if runtime in runtimes:
+                output.append(fn)
         return output
 
     # account-level information
